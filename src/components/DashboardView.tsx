@@ -5,6 +5,13 @@ import { HardwareTelemetry } from '../services/IHardwareService.ts';
 import { ClayCard } from './ui/ClayCard.tsx';
 import { ClayButton } from './ui/ClayButton.tsx';
 import { ClayBadge } from './ui/ClayBadge.tsx';
+import {
+  PillIcon,
+  AlertTriangleIcon,
+  CheckCircle2Icon,
+  ClockIcon,
+  ActivityIcon,
+} from './ui/LucideIcons.tsx';
 
 interface DashboardViewProps {
   medicines: Medicine[];
@@ -48,10 +55,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div
               className={`
                 w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-md
-                ${isUnclaimedAlarm ? 'bg-[#f0a89e] text-white animate-bounce' : 'bg-[#f6e7a9] text-[#483c16]'}
+                ${isUnclaimedAlarm ? 'bg-[#f0a89e] text-[#551913] animate-bounce' : 'bg-[#f6e7a9] text-[#483c16]'}
               `}
             >
-              {isUnclaimedAlarm ? '🚨' : '💊'}
+              {isUnclaimedAlarm ? <AlertTriangleIcon size={30} /> : <PillIcon size={30} />}
             </div>
             <div>
               <div className="flex items-center gap-2 justify-center md:justify-start">
@@ -74,9 +81,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             tone={isUnclaimedAlarm ? 'danger' : 'mint'}
             size="lg"
             onClick={onAcknowledgePickup}
-            className="w-full md:w-auto shadow-md min-w-[240px] text-base"
+            className="w-full md:w-auto shadow-md min-w-[240px] text-base flex items-center gap-2"
           >
-            ✓ I Have Taken My Pill
+            <CheckCircle2Icon size={20} />
+            <span>I Have Taken My Pill</span>
           </ClayButton>
         </div>
       )}

@@ -3,6 +3,14 @@ import { ClayBadge } from './ui/ClayBadge.tsx';
 import { ClayButton } from './ui/ClayButton.tsx';
 import { HardwareTelemetry } from '../services/IHardwareService.ts';
 import { AudioManager } from '../services/AudioManager.ts';
+import {
+  LayoutDashboardIcon,
+  PillIcon,
+  ClockIcon,
+  WrenchIcon,
+  Volume2Icon,
+  VolumeXIcon,
+} from './ui/LucideIcons.tsx';
 
 export type ActiveTab = 'dashboard' | 'chambers' | 'schedule' | 'simulator';
 
@@ -30,11 +38,11 @@ export const Header: React.FC<HeaderProps> = ({
     setIsMuted(next);
   };
 
-  const navItems: { tab: ActiveTab; label: string; icon: string }[] = [
-    { tab: 'dashboard', label: 'Dashboard', icon: '🏠' },
-    { tab: 'chambers', label: 'Chambers', icon: '💊' },
-    { tab: 'schedule', label: 'Daily Schedule', icon: '⏰' },
-    { tab: 'simulator', label: 'Hardware Diagnostic', icon: '⚙️' },
+  const navItems: { tab: ActiveTab; label: string; icon: React.ReactNode }[] = [
+    { tab: 'dashboard', label: 'Dashboard', icon: <LayoutDashboardIcon size={18} /> },
+    { tab: 'chambers', label: 'Chambers', icon: <PillIcon size={18} /> },
+    { tab: 'schedule', label: 'Daily Schedule', icon: <ClockIcon size={18} /> },
+    { tab: 'simulator', label: 'Hardware Diagnostic', icon: <WrenchIcon size={18} /> },
   ];
 
   return (
@@ -43,8 +51,8 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand & Project Identity */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-[#7dcbbe] flex items-center justify-center text-xl shadow-[inset_0_2px_0_rgba(255,255,255,0.7),0_3px_6px_rgba(0,0,0,0.08)]">
-              💊
+            <div className="w-10 h-10 rounded-2xl bg-[#7dcbbe] flex items-center justify-center text-[#1b3d36] shadow-[inset_0_2px_0_rgba(255,255,255,0.7),0_3px_6px_rgba(0,0,0,0.08)]">
+              <PillIcon size={22} />
             </div>
             <div>
               <h1 className="font-extrabold text-[#2f383b] text-lg tracking-tight leading-none">
@@ -72,9 +80,19 @@ export const Header: React.FC<HeaderProps> = ({
               tone={isMuted ? 'quiet' : 'mint'}
               onClick={handleToggleMute}
               title={isMuted ? 'Unmute Piezo Buzzer' : 'Mute Piezo Buzzer'}
-              className="!min-h-[36px] !px-3"
+              className="!min-h-[36px] !px-3 flex items-center gap-1.5"
             >
-              {isMuted ? '🔇 Buzzer Muted' : '🔊 Buzzer Sound'}
+              {isMuted ? (
+                <>
+                  <VolumeXIcon size={16} />
+                  <span>Buzzer Muted</span>
+                </>
+              ) : (
+                <>
+                  <Volume2Icon size={16} />
+                  <span>Buzzer Active</span>
+                </>
+              )}
             </ClayButton>
           </div>
         </div>

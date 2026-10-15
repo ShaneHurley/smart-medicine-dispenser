@@ -5,6 +5,13 @@ import { ClayCard } from './ui/ClayCard.tsx';
 import { ClayButton } from './ui/ClayButton.tsx';
 import { ClayBadge } from './ui/ClayBadge.tsx';
 import { ClayInput } from './ui/ClayInput.tsx';
+import {
+  ClockIcon,
+  PlusIcon,
+  XIcon,
+  CheckCircle2Icon,
+  AlertTriangleIcon,
+} from './ui/LucideIcons.tsx';
 
 interface ScheduleViewProps {
   schedules: ScheduleItem[];
@@ -41,11 +48,21 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   const getStatusBadge = (status: ScheduleItem['status']) => {
     switch (status) {
       case 'taken':
-        return <ClayBadge tone="mint" size="sm">✓ Taken</ClayBadge>;
+        return (
+          <ClayBadge tone="mint" size="sm" className="flex items-center gap-1">
+            <CheckCircle2Icon size={12} />
+            <span>Taken</span>
+          </ClayBadge>
+        );
       case 'dispensed':
         return <ClayBadge tone="butter" size="sm" pulse>In Pickup Tray</ClayBadge>;
       case 'unclaimed_alert':
-        return <ClayBadge tone="danger" size="sm" pulse>⚠️ Unclaimed Alarm</ClayBadge>;
+        return (
+          <ClayBadge tone="danger" size="sm" pulse className="flex items-center gap-1">
+            <AlertTriangleIcon size={12} />
+            <span>Unclaimed Alarm</span>
+          </ClayBadge>
+        );
       case 'due':
         return <ClayBadge tone="peach" size="sm" pulse>Due Now</ClayBadge>;
       case 'upcoming':
@@ -70,9 +87,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           tone="mint"
           size="md"
           onClick={() => setShowAddModal(true)}
-          className="shadow-sm"
+          className="shadow-sm flex items-center gap-1.5"
         >
-          + Add Scheduled Dose
+          <PlusIcon size={18} />
+          <span>Add Scheduled Dose</span>
         </ClayButton>
       </div>
 
@@ -120,13 +138,15 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                     tone={item.status === 'unclaimed_alert' ? 'danger' : 'mint'}
                     size="md"
                     onClick={() => onMarkTaken(item.id)}
-                    className="flex-1 md:flex-initial"
+                    className="flex-1 md:flex-initial flex items-center gap-1.5"
                   >
-                    ✓ Confirm Taken
+                    <CheckCircle2Icon size={16} />
+                    <span>Confirm Taken</span>
                   </ClayButton>
                 ) : item.status === 'taken' ? (
-                  <span className="text-xs font-bold text-[#5f6d72] bg-[#eef7f5] px-3 py-1.5 rounded-full border border-[#c5e6df]">
-                    Dose Retrieved
+                  <span className="text-xs font-bold text-[#1b5e50] bg-[#eef7f5] px-3 py-1.5 rounded-full border border-[#c5e6df] flex items-center gap-1">
+                    <CheckCircle2Icon size={14} />
+                    <span>Dose Retrieved</span>
                   </span>
                 ) : (
                   <ClayButton
@@ -145,7 +165,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                   title="Remove from schedule"
                   className="w-10 h-10 rounded-full hover:bg-[#eae3d7] flex items-center justify-center text-[#88969b] hover:text-[#5f6d72] font-bold cursor-pointer transition-colors"
                 >
-                  ✕
+                  <XIcon size={16} />
                 </button>
               </div>
             </ClayCard>

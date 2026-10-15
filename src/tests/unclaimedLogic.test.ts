@@ -36,6 +36,12 @@ export async function runUnclaimedLogicTests() {
   );
   console.log('✓ Unclaimed pill alarm triggered with active buzzer alert');
 
+  // Verify dispense rejection during unclaimed alarm
+  const blockedDispense = await hw.dispensePill(1);
+  assert(!blockedDispense.success, 'Dispense MUST be blocked while in unclaimed alarm');
+  assert(blockedDispense.errorCode === 'TRAY_OCCUPIED', `Expected TRAY_OCCUPIED, got ${blockedDispense.errorCode}`);
+  console.log('✓ Dispense safely blocked while unclaimed alarm is active');
+
   // Patient retrieves pill
   await hw.acknowledgePickup();
   status = await hw.getHardwareStatus();

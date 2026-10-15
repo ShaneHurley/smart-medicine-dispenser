@@ -132,6 +132,27 @@ export class MockHardwareService implements IHardwareService {
     }
   }
 
+  public async reverseStepper(chamberId: number, degrees: number, _speed: number = 2000): Promise<void> {
+    this.telemetry.stepperRunning = true;
+    this.telemetry.activeChamber = chamberId;
+    this.notify();
+
+    const startDeg = this.telemetry.stepperAngleDeg;
+    const totalSteps = 15;
+    const stepTime = 20;
+
+    for (let i = 1; i <= totalSteps; i++) {
+      await new Promise((r) => setTimeout(r, stepTime));
+      let current = startDeg - (degrees * i) / totalSteps;
+      while (current < 0) current += 360;
+      this.telemetry.stepperAngleDeg = Math.round(current) % 360;
+      this.notify();
+    }
+
+    this.telemetry.stepperRunning = false;
+    this.notify();
+  }
+
   public async rotateStepper(chamberId: number, targetDeg: number, _speed: number): Promise<void> {
     this.telemetry.stepperRunning = true;
     this.telemetry.activeChamber = chamberId;
@@ -157,7 +178,20 @@ export class MockHardwareService implements IHardwareService {
     chamberId: number,
     profile?: DispenseProfile
   ): Promise<DispenseResult> {
-    if (this.telemetry.dispenseState !== 'idle' && this.telemetry.dispenseState !== 'waiting_pickup') {
+    // Safety check 1: Reject if tray already contains an unclaimed pill
+    if (this.telemetry.trayOccupied) {
+      return {
+        success: false,
+        chamberId,
+        durationMs: 0,
+        beamBreakDurationMs: 0,
+        errorCode: 'TRAY_OCCUPIED',
+        message: 'Pickup tray already contains an unretrieved pill. Please retrieve it before dispensing another dose.',
+      };
+    }
+
+    // Safety check 2: Reject if mechanism is active in non-idle state
+    if (this.telemetry.dispenseState !== 'idle') {
       return {
         success: false,
         chamberId,
@@ -186,8 +220,8 @@ export class MockHardwareService implements IHardwareService {
       this.telemetry.dispenseState = 'jammed';
       this.telemetry.jamDetected = true;
       this.triggerBuzzer('jam_error');
-      // Auto-recovery reverse rotation
-      await this.rotateStepper(chamberId, (this.telemetry.stepperAngleDeg - 15 + 360) % 360, 2000);
+      // Auto-recovery reverse rotation: Smooth counter-clockwise 15° backoff
+      await this.reverseStepper(chamberId, 15, 2000);
       this.notify();
       return {
         success: false,
@@ -195,7 +229,7 @@ export class MockHardwareService implements IHardwareService {
         durationMs: Date.now() - startTime,
         beamBreakDurationMs: 0,
         errorCode: 'STALLGUARD_JAM',
-        message: 'TMC2209 StallGuard detected torque threshold limit! Motor reversed to clear jam.',
+        message: 'TMC2209 StallGuard detected torque threshold limit! Motor reversed 15° to clear jam.',
       };
     }
 

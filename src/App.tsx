@@ -68,6 +68,13 @@ export const App: React.FC = () => {
   useEffect(() => {
     const unsubscribe = hardwareService.subscribeToTelemetry((t) => {
       setTelemetry({ ...t });
+      if (t.dispenseState === 'unclaimed_alarm') {
+        const dispensed = scheduleMgr.getSchedules().find((s) => s.status === 'dispensed');
+        if (dispensed) {
+          scheduleMgr.markUnclaimed(dispensed.id);
+          setSchedules(scheduleMgr.getSchedules());
+        }
+      }
     });
     return unsubscribe;
   }, [hardwareService]);

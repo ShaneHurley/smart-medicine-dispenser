@@ -14,9 +14,6 @@ console.log('🚀 Starting Smart Medicine Dispenser Production Build...');
 fs.mkdirSync(distDir, { recursive: true });
 fs.mkdirSync(firmwareDataDir, { recursive: true });
 
-// Read CSS styles
-const cssContent = fs.readFileSync(path.resolve(rootDir, 'src', 'index.css'), 'utf8');
-
 // Build the self-contained Single-Page Application HTML
 const productionHtml = `<!doctype html>
 <html lang="en">
@@ -61,6 +58,7 @@ const productionHtml = `<!doctype html>
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 0.5rem;
       font-weight: 700;
       min-height: 48px;
       padding: 0.65rem 1.4rem;
@@ -74,6 +72,12 @@ const productionHtml = `<!doctype html>
     .clay-btn:active {
       transform: translateY(2px);
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .clay-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
     }
     .btn-mint { background-color: #7dcbbe; color: #1b3d36; border-color: #5cb8a8; }
     .btn-peach { background-color: #f0b7a0; color: #4d281a; border-color: #e29d81; }
@@ -134,10 +138,9 @@ const productionHtml = `<!doctype html>
       padding: 1rem; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
     }
     .modal-card {
-      background: #fffdf8; max-width: 500px; width: 100%; border-radius: 2rem; border: 1px solid #ebdccb;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.2); padding: 1.75rem; display: flex; flex-direction: column; gap: 1.25rem;
+      background: #fffdf8; max-width: 520px; width: 100%; border-radius: 2rem; border: 1px solid #ebdccb;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.2), inset 0 2px 0 rgba(255,255,255,0.8); padding: 1.75rem; display: flex; flex-direction: column; gap: 1.25rem;
     }
-    /* SVG Visualizer Canvas */
     .rotor-container {
       background: #f7f4ed; border: 1px solid #e5dcce; border-radius: 1.75rem; padding: 1rem;
       display: flex; align-items: center; justify-content: center; position: relative;
@@ -147,6 +150,13 @@ const productionHtml = `<!doctype html>
       background: #fdfcf9; border: 1px solid #ebdccb; border-radius: 1.25rem; padding: 0.75rem;
       max-height: 220px; overflow-y: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem;
     }
+    .icon-svg { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
+    .step-node {
+      padding: 0.6rem 0.4rem; border-radius: 1rem; border: 1px solid #e2dbce; background: #f4efe6;
+      font-size: 0.7rem; font-weight: 700; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+    }
+    .step-node.active { background: #7dcbbe; color: #1b3d36; border-color: #5cb8a8; animation: alertPulse 1.2s infinite; }
+    .step-node.done { background: #d6f2ec; color: #1b5e50; border-color: #9fdcd1; }
   </style>
 </head>
 <body>
@@ -154,26 +164,39 @@ const productionHtml = `<!doctype html>
   <header>
     <div class="container header-content">
       <div style="display:flex; align-items:center; gap:0.75rem;">
-        <div style="width:40px; height:40px; border-radius:1rem; background:#7dcbbe; display:flex; align-items:center; justify-content:center; font-size:1.25rem; box-shadow:inset 0 2px 0 rgba(255,255,255,0.7), 0 3px 6px rgba(0,0,0,0.08);">
-          💊
+        <div style="width:40px; height:40px; border-radius:1rem; background:#7dcbbe; display:flex; align-items:center; justify-content:center; color:#1b3d36; box-shadow:inset 0 2px 0 rgba(255,255,255,0.7), 0 3px 6px rgba(0,0,0,0.08);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
         </div>
         <div>
           <div style="font-weight:900; font-size:1.15rem; letter-spacing:-0.02em;">Smart Dispenser</div>
-          <div style="font-size:0.75rem; font-weight:700; color:#5f6d72;">EE Senior Design • ESP32-S3</div>
+          <div style="font-size:0.75rem; font-weight:700; color:#5f6d72;">EE Senior Design • ESP32-S3 Dual-Core</div>
         </div>
-        <div style="display:flex; gap:0.5rem; margin-left:0.5rem;">
+        <div style="display:flex; gap:0.5rem; margin-left:0.5rem; align-items:center;">
           <span class="clay-badge badge-mint" id="hw-mode-badge">● ESP32 Core 0/1</span>
           <button class="clay-btn btn-quiet" id="mute-btn" style="min-height:36px; padding:0.3rem 0.8rem; font-size:0.8rem;">
-            🔊 Buzzer Sound
+            <span id="mute-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></span>
+            <span id="mute-text">Buzzer Active</span>
           </button>
         </div>
       </div>
 
       <nav class="nav-tabs">
-        <button class="nav-tab active" data-tab="dashboard">🏠 Dashboard</button>
-        <button class="nav-tab" data-tab="chambers">💊 Chambers</button>
-        <button class="nav-tab" data-tab="schedule">⏰ Schedule</button>
-        <button class="nav-tab" data-tab="simulator">⚙️ Hardware Diagnostic</button>
+        <button class="nav-tab active" data-tab="dashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          Dashboard
+        </button>
+        <button class="nav-tab" data-tab="chambers">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+          Chambers
+        </button>
+        <button class="nav-tab" data-tab="schedule">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Schedule
+        </button>
+        <button class="nav-tab" data-tab="simulator">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          Hardware Diagnostic
+        </button>
       </nav>
     </div>
   </header>
@@ -294,6 +317,7 @@ const productionHtml = `<!doctype html>
     const state = {
       activeTab: 'dashboard',
       isReal: false,
+      autoDoseEnabled: true,
       telemetry: {
         timestamp: Date.now(),
         dispenseState: 'idle',
@@ -355,6 +379,20 @@ const productionHtml = `<!doctype html>
       state.telemetry.stepperRunning = false;
     }
 
+    async function reverseStepper(degrees) {
+      state.telemetry.stepperRunning = true;
+      const start = state.telemetry.stepperAngleDeg;
+      const steps = 15;
+      for (let i = 1; i <= steps; i++) {
+        await new Promise(r => setTimeout(r, 20));
+        let cur = start - (degrees * i) / steps;
+        while (cur < 0) cur += 360;
+        state.telemetry.stepperAngleDeg = Math.round(cur) % 360;
+        updateSimulatorSVG();
+      }
+      state.telemetry.stepperRunning = false;
+    }
+
     async function setServo(angle) {
       const start = state.telemetry.servoAngleDeg;
       const diff = angle - start;
@@ -367,9 +405,22 @@ const productionHtml = `<!doctype html>
     }
 
     async function dispensePill(chamberId) {
-      if (state.telemetry.dispenseState !== 'idle' && state.telemetry.dispenseState !== 'waiting_pickup') return;
+      // Critical Safety Interlock: Reject if tray is occupied or motor busy
+      if (state.telemetry.trayOccupied) {
+        addLog('SAFETY_INTERLOCK', 'Dispense BLOCKED: Pickup tray already contains a pill! Take dose first.', 'error');
+        alert('Dispense blocked: A pill is already waiting in the collection tray. Please take your medication first.');
+        return false;
+      }
+      if (state.telemetry.dispenseState !== 'idle') {
+        addLog('HARDWARE', \`Dispenser busy in state: \${state.telemetry.dispenseState}\`, 'warn');
+        return false;
+      }
+
       const med = state.medicines.find(m => m.chamberId === chamberId);
-      if (!med || !med.canDispense()) return;
+      if (!med || !med.canDispense()) {
+        addLog('INVENTORY', \`Chamber \${chamberId} empty or depleted!\`, 'error');
+        return false;
+      }
 
       const profile = med.getDispenseProfile();
       addLog('DISPENSER', \`Beginning single-pill singulation for Chamber \${chamberId} (\${med.name})...\`, 'info');
@@ -378,6 +429,7 @@ const productionHtml = `<!doctype html>
       const angles = { 1: 45, 2: 135, 3: 225, 4: 315 };
       state.telemetry.dispenseState = 'indexing_motor';
       state.telemetry.activeChamber = chamberId;
+      updatePipelineModal(1);
       render();
       await rotateStepper(angles[chamberId] || 45);
 
@@ -385,15 +437,17 @@ const productionHtml = `<!doctype html>
       if (state.telemetry.jamDetected) {
         state.telemetry.dispenseState = 'jammed';
         audioMgr.playJamError();
-        addLog('TMC2209', 'StallGuard torque spike detected! Jam auto-recovery initiated.', 'error');
-        await rotateStepper((state.telemetry.stepperAngleDeg - 15 + 360) % 360);
+        addLog('TMC2209', 'StallGuard torque limit reached! Reversing 15° counter-clockwise to clear jam.', 'error');
+        await reverseStepper(15);
+        closeModal();
         render();
-        return;
+        return false;
       }
 
       // 2. Vibration Jitter if capsule
       if (profile.vibrationJitterSteps > 0) {
         state.telemetry.dispenseState = 'vibrating';
+        updatePipelineModal(2);
         render();
         for (let j = 0; j < profile.vibrationJitterSteps; j++) {
           state.telemetry.stepperAngleDeg = (state.telemetry.stepperAngleDeg + 3) % 360;
@@ -407,11 +461,13 @@ const productionHtml = `<!doctype html>
 
       // 3. Open Servo Gate
       state.telemetry.dispenseState = 'opening_gate';
+      updatePipelineModal(2);
       render();
       await setServo(90);
 
       // 4. Optical Beam Drop Detect
       state.telemetry.dispenseState = 'verifying_beam_break';
+      updatePipelineModal(3);
       render();
       await new Promise(r => setTimeout(r, 200));
 
@@ -434,9 +490,15 @@ const productionHtml = `<!doctype html>
       state.telemetry.dispenseState = 'waiting_pickup';
       state.telemetry.trayOccupied = true;
       state.telemetry.unclaimedTimerSeconds = 15;
-      render();
+      updatePipelineModal(4);
 
+      // Update schedule item if matched
+      const due = state.schedules.find(s => s.chamberId === chamberId && (s.status === 'upcoming' || s.status === 'due'));
+      if (due) due.status = 'dispensed';
+
+      render();
       startUnclaimedTimer();
+      return true;
     }
 
     function startUnclaimedTimer() {
@@ -455,6 +517,11 @@ const productionHtml = `<!doctype html>
             state.telemetry.dispenseState = 'unclaimed_alarm';
             audioMgr.startUnclaimedAlarm();
             addLog('ALARM', 'UNCLAIMED PILL ALERT! Buzzer sounding because pill was not retrieved.', 'error');
+
+            // Mark schedule item as unclaimed_alert
+            const dispensed = state.schedules.find(s => s.status === 'dispensed');
+            if (dispensed) dispensed.status = 'unclaimed_alert';
+
             render();
           }
         }
@@ -474,7 +541,97 @@ const productionHtml = `<!doctype html>
       const due = state.schedules.find(s => s.status === 'dispensed' || s.status === 'unclaimed_alert');
       if (due) due.status = 'taken';
 
+      closeModal();
       render();
+    }
+
+    // Modal UI Helpers
+    let modalActiveMed = null;
+
+    function openDispenseModal(chamberId) {
+      const med = state.medicines.find(m => m.chamberId === chamberId);
+      if (!med) return;
+      modalActiveMed = med;
+      const modal = document.getElementById('modal-container');
+      const profile = med.getDispenseProfile();
+
+      modal.innerHTML = \`
+        <div class="modal-overlay" id="modal-backdrop">
+          <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ebdccb; pb:1rem; padding-bottom:0.75rem;">
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <div style="width:44px; height:44px; border-radius:1rem; background:\${med.colorHex}; display:flex; align-items:center; justify-content:center; font-weight:900; box-shadow:inset 0 2px 0 rgba(255,255,255,0.7);">
+                  \${med.chamberId}
+                </div>
+                <div>
+                  <h3 style="font-size:1.2rem; font-weight:900; line-height:1.2;">Dispense Single Pill</h3>
+                  <p style="font-size:0.8rem; font-weight:700; color:#5f6d72;">Chamber #\${med.chamberId} • \${med.name} (\${med.dosage})</p>
+                </div>
+              </div>
+              <button id="modal-close-btn" style="border:none; background:#f4efe6; width:34px; height:34px; border-radius:50%; font-weight:900; cursor:pointer;">✕</button>
+            </div>
+
+            <div style="background:#f7f4ed; padding:0.85rem; border-radius:1.25rem; border:1px solid #e5dcce; font-size:0.8rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:0.35rem;">
+                <strong style="color:#5f6d72;">PROFILE & HANDLING</strong>
+                <span class="clay-badge badge-mint">\${med.type.replace('_',' ').toUpperCase()}</span>
+              </div>
+              <p style="font-weight:600; color:#2f383b;">\${med.getPhysicalDescription()}</p>
+              <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:0.5rem; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid #ebdccb;">
+                <div><span style="color:#5f6d72;">Feed Rate:</span> <strong>\${profile.stepDelayUs}µs</strong></div>
+                <div><span style="color:#5f6d72;">Gate Hold:</span> <strong>\${profile.servoGateHoldMs}ms</strong></div>
+              </div>
+            </div>
+
+            <div>
+              <span style="font-size:0.75rem; font-weight:800; color:#5f6d72; text-transform:uppercase; display:block; margin-bottom:0.4rem;">
+                Hardware Dispense Pipeline
+              </span>
+              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:0.5rem;">
+                <div class="step-node" id="modal-step-1"><span>1</span><span>Stepper</span></div>
+                <div class="step-node" id="modal-step-2"><span>2</span><span>Servo Gate</span></div>
+                <div class="step-node" id="modal-step-3"><span>3</span><span>IR Drop</span></div>
+                <div class="step-node" id="modal-step-4"><span>4</span><span>Tray Ready</span></div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:0.75rem; margin-top:0.5rem;">
+              <button class="clay-btn btn-quiet" id="modal-cancel-btn" style="flex:1;">Cancel</button>
+              <button class="clay-btn btn-mint" id="modal-start-dispense-btn" style="flex:2;" \${state.telemetry.trayOccupied ? 'disabled' : ''}>
+                Dispense 1 Pill Now
+              </button>
+            </div>
+          </div>
+        </div>
+      \`;
+      modal.style.display = 'block';
+
+      document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+      document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+      document.getElementById('modal-start-dispense-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('modal-start-dispense-btn');
+        if (btn) { btn.disabled = true; btn.innerText = 'Dispensing...'; }
+        await dispensePill(chamberId);
+      });
+    }
+
+    function updatePipelineModal(step) {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(\`modal-step-\${i}\`);
+        if (!el) continue;
+        el.className = 'step-node';
+        if (i < step) el.classList.add('done');
+        else if (i === step) el.classList.add('active');
+      }
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modal-container');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.innerHTML = '';
+      }
+      modalActiveMed = null;
     }
 
     // UI Renderers
@@ -502,18 +659,21 @@ const productionHtml = `<!doctype html>
       return \`
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
           \${isWaiting ? \`
-            <div class="alert-banner" style="\${isAlarm ? '' : 'border-color:#e5cd77; background:#fdfbe9; animation:none;'}">
+            <div class="alert-banner" style="\${isAlarm ? '' : 'border-color:#edd994; background:#fdfbe9; animation:none;'}">
               <div style="display:flex; align-items:center; gap:1rem;">
-                <div style="width:48px; height:48px; border-radius:1rem; background:\${isAlarm ? '#f0a89e' : '#f6e7a9'}; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
-                  \${isAlarm ? '🚨' : '💊'}
+                <div style="width:52px; height:52px; border-radius:1.25rem; background:\${isAlarm ? '#f0a89e' : '#f6e7a9'}; display:flex; align-items:center; justify-content:center; color:\${isAlarm ? '#551913' : '#483c16'};">
+                  \${isAlarm ?
+                    '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>' :
+                    '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>'
+                  }
                 </div>
                 <div>
-                  <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                     <strong style="font-size:1.15rem; color:#2f383b;">
                       \${isAlarm ? 'PILL UNCLAIMED — BUZZER ACTIVE' : 'Dose Ready in Pickup Tray'}
                     </strong>
                     <span class="clay-badge \${isAlarm ? 'badge-danger' : 'badge-butter'}">
-                      \${isAlarm ? 'Audible Alarm' : 'Unclaimed in <span id="unclaimed-timer-text">' + state.telemetry.unclaimedTimerSeconds + 's</span>'}
+                      \${isAlarm ? 'Escalating Buzzer Alarm' : 'Unclaimed in <span id="unclaimed-timer-text">' + state.telemetry.unclaimedTimerSeconds + 's</span>'}
                     </span>
                   </div>
                   <p style="font-size:0.875rem; color:#5f6d72; margin-top:0.25rem;">
@@ -521,8 +681,9 @@ const productionHtml = `<!doctype html>
                   </p>
                 </div>
               </div>
-              <button class="clay-btn \${isAlarm ? 'btn-danger' : 'btn-mint'}" id="ack-pickup-btn" style="min-width:220px;">
-                ✓ I Have Taken My Pill
+              <button class="clay-btn \${isAlarm ? 'btn-danger' : 'btn-mint'}" id="ack-pickup-btn" style="min-width:240px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                I Have Taken My Pill
               </button>
             </div>
           \` : ''}
@@ -539,7 +700,8 @@ const productionHtml = `<!doctype html>
               </p>
             </div>
             \${nextMed ? \`
-              <button class="clay-btn btn-mint" id="dispense-next-btn" style="min-height:56px; padding:0 2rem; font-size:1.1rem;" \${isWaiting ? 'disabled' : ''}>
+              <button class="clay-btn btn-mint" id="dispense-next-btn" style="min-height:56px; padding:0 2rem; font-size:1.05rem;" \${isWaiting ? 'disabled' : ''}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
                 Dispense Next Dose (1 Pill)
               </button>
             \` : ''}
@@ -577,7 +739,8 @@ const productionHtml = `<!doctype html>
                     </div>
                   </div>
 
-                  <button class="clay-btn btn-quiet quick-dispense-btn" data-chamber="\${m.chamberId}" \${isWaiting ? 'disabled' : ''} style="min-height:42px; font-size:0.875rem;">
+                  <button class="clay-btn btn-quiet open-dispense-modal-btn" data-chamber="\${m.chamberId}" \${isWaiting ? 'disabled' : ''} style="min-height:42px; font-size:0.875rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
                     Dispense 1 Pill
                   </button>
                 </div>
@@ -635,7 +798,7 @@ const productionHtml = `<!doctype html>
                   <div style="display:flex; gap:0.5rem;">
                     <button class="clay-btn btn-quiet refill-btn" data-chamber="\${m.chamberId}" data-amount="5" style="flex:1; min-height:40px; font-size:0.8rem;">+5 Refill</button>
                     <button class="clay-btn btn-quiet refill-btn" data-chamber="\${m.chamberId}" data-amount="10" style="flex:1; min-height:40px; font-size:0.8rem;">+10 Refill</button>
-                    <button class="clay-btn btn-mint quick-dispense-btn" data-chamber="\${m.chamberId}" style="flex:1.5; min-height:40px; font-size:0.85rem;">Dispense 1</button>
+                    <button class="clay-btn btn-mint open-dispense-modal-btn" data-chamber="\${m.chamberId}" style="flex:1.5; min-height:40px; font-size:0.85rem;" \${state.telemetry.trayOccupied ? 'disabled' : ''}>Dispense 1</button>
                   </div>
                 </div>
               \`;
@@ -648,10 +811,20 @@ const productionHtml = `<!doctype html>
     function renderSchedule() {
       return \`
         <div style="display:flex; flex-direction:column; gap:1.25rem;">
-          <div>
-            <h2 style="font-size:1.5rem; font-weight:900;">Daily Dose Timeline</h2>
-            <p style="font-size:0.875rem; color:#5f6d72; font-weight:600;">Dispensing schedule with optical verification and unclaimed dose alerts.</p>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+              <h2 style="font-size:1.5rem; font-weight:900;">Daily Dose Timeline</h2>
+              <p style="font-size:0.875rem; color:#5f6d72; font-weight:600;">Dispenses 1 pill at a time on schedule; triggers unclaimed reminder if dose is not picked up.</p>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <span class="clay-badge badge-mint">Auto-Dose Engine: Active</span>
+              <button class="clay-btn btn-butter" id="sim-due-btn" style="min-height:38px; font-size:0.8rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Test Auto-Dose
+              </button>
+            </div>
           </div>
+
           <div style="display:flex; flex-direction:column; gap:0.75rem;">
             \${state.schedules.map(s => {
               const med = state.medicines.find(m => m.chamberId === s.chamberId);
@@ -665,16 +838,24 @@ const productionHtml = `<!doctype html>
                     <div>
                       <div style="display:flex; align-items:center; gap:0.5rem;">
                         <strong style="font-size:1.05rem;">\${s.label}</strong>
-                        <span class="clay-badge \${s.status === 'taken' ? 'badge-mint' : s.status === 'dispensed' ? 'badge-butter' : 'badge-quiet'}">\${s.status}</span>
+                        <span class="clay-badge \${s.status === 'taken' ? 'badge-mint' : s.status === 'unclaimed_alert' ? 'badge-danger' : s.status === 'dispensed' ? 'badge-butter' : 'badge-quiet'}">\${s.status === 'unclaimed_alert' ? '⚠️ UNCLAIMED ALARM' : s.status}</span>
                       </div>
                       <div style="font-size:0.8rem; color:#5f6d72; font-weight:600;">Chamber #\${s.chamberId} • \${med ? med.name + ' (' + med.dosage + ')' : ''}</div>
                     </div>
                   </div>
                   <div>
                     \${s.status === 'taken' ? \`
-                      <span class="clay-badge badge-mint" style="padding:0.4rem 0.8rem;">✓ Dose Retrieved</span>
+                      <span class="clay-badge badge-mint" style="padding:0.4rem 0.8rem;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                        Dose Retrieved
+                      </span>
+                    \` : s.status === 'dispensed' || s.status === 'unclaimed_alert' ? \`
+                      <button class="clay-btn btn-mint" id="ack-pickup-btn" style="min-height:42px; font-size:0.85rem;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                        Confirm Taken
+                      </button>
                     \` : \`
-                      <button class="clay-btn btn-mint quick-dispense-btn" data-chamber="\${s.chamberId}" style="min-height:42px; font-size:0.85rem;">
+                      <button class="clay-btn btn-mint open-dispense-modal-btn" data-chamber="\${s.chamberId}" style="min-height:42px; font-size:0.85rem;" \${state.telemetry.trayOccupied ? 'disabled' : ''}>
                         Dispense 1 Pill
                       </button>
                     \`}
@@ -849,15 +1030,16 @@ const productionHtml = `<!doctype html>
       if (muteBtn) {
         muteBtn.addEventListener('click', () => {
           audioMgr.muted = !audioMgr.muted;
-          muteBtn.innerText = audioMgr.muted ? '🔇 Buzzer Muted' : '🔊 Buzzer Sound';
+          const textEl = document.getElementById('mute-text');
+          if (textEl) textEl.innerText = audioMgr.muted ? 'Buzzer Muted' : 'Buzzer Active';
         });
       }
 
-      // Quick Dispense Buttons
-      document.querySelectorAll('.quick-dispense-btn').forEach(b => {
+      // Open Modal Buttons
+      document.querySelectorAll('.open-dispense-modal-btn').forEach(b => {
         b.addEventListener('click', () => {
           const ch = Number(b.dataset.chamber);
-          dispensePill(ch);
+          openDispenseModal(ch);
         });
       });
 
@@ -879,7 +1061,21 @@ const productionHtml = `<!doctype html>
       if (dispNext) {
         dispNext.addEventListener('click', () => {
           const nextDose = state.schedules.find(s => s.status === 'upcoming') || state.schedules[0];
-          if (nextDose) dispensePill(nextDose.chamberId);
+          if (nextDose) openDispenseModal(nextDose.chamberId);
+        });
+      }
+
+      // Simulate Scheduled Due Dose Auto-Trigger
+      const simDueBtn = document.getElementById('sim-due-btn');
+      if (simDueBtn) {
+        simDueBtn.addEventListener('click', () => {
+          const upcoming = state.schedules.find(s => s.status === 'upcoming');
+          if (upcoming) {
+            addLog('SCHEDULER', \`Scheduled dose '\${upcoming.label}' time reached! Auto-dispensing 1 pill...\`, 'info');
+            dispensePill(upcoming.chamberId);
+          } else {
+            addLog('SCHEDULER', 'No upcoming dose found in schedule.', 'warn');
+          }
         });
       }
 
@@ -889,7 +1085,7 @@ const productionHtml = `<!doctype html>
 
       // Simulator Manual Controls
       const jm45 = document.getElementById('jog-m45');
-      if (jm45) jm45.addEventListener('click', () => rotateStepper((state.telemetry.stepperAngleDeg - 45 + 360) % 360));
+      if (jm45) jm45.addEventListener('click', () => reverseStepper(45));
       const jp45 = document.getElementById('jog-p45');
       if (jp45) jp45.addEventListener('click', () => rotateStepper((state.telemetry.stepperAngleDeg + 45) % 360));
       const jhome = document.getElementById('jog-home');

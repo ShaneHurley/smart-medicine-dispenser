@@ -3,6 +3,7 @@ import { Medicine } from '../domain/Medicine.ts';
 import { ClayButton } from './ui/ClayButton.tsx';
 import { ClayBadge } from './ui/ClayBadge.tsx';
 import { HardwareTelemetry, DispenseResult } from '../services/IHardwareService.ts';
+import { PillIcon, XIcon, CheckCircle2Icon, AlertTriangleIcon } from './ui/LucideIcons.tsx';
 
 interface QuickDispenseModalProps {
   medicine: Medicine | null;
@@ -55,10 +56,10 @@ export const QuickDispenseModal: React.FC<QuickDispenseModalProps> = ({
         <div className="flex items-center justify-between border-b border-[#ebdccb] pb-4">
           <div className="flex items-center gap-3">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-[inset_0_2px_0_rgba(255,255,255,0.6),0_3px_6px_rgba(0,0,0,0.06)]"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-[#1b3d36] shadow-[inset_0_2px_0_rgba(255,255,255,0.6),0_3px_6px_rgba(0,0,0,0.06)]"
               style={{ backgroundColor: medicine.colorHex }}
             >
-              💊
+              <PillIcon size={24} />
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-[#2f383b] leading-tight">
@@ -73,7 +74,7 @@ export const QuickDispenseModal: React.FC<QuickDispenseModalProps> = ({
             onClick={onClose}
             className="w-10 h-10 rounded-full bg-[#f4efe6] hover:bg-[#eae3d7] flex items-center justify-center text-[#5f6d72] font-bold text-lg cursor-pointer"
           >
-            ✕
+            <XIcon size={18} />
           </button>
         </div>
 

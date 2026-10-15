@@ -19,6 +19,7 @@ public:
     void commandBuzzer(BuzzerPattern_t pattern);
     void commandServo(uint8_t angleDeg);
     void commandMotorStep(int16_t deltaDeg);
+    void commandMotorReverse(float deltaDeg);
     void simulateJamFault(bool enable);
 
     // Telemetry Snapshot
@@ -38,6 +39,7 @@ private:
     void initBuzzer();
     
     void rotateStepperDeg(float targetDeg, uint32_t stepDelayUs);
+    void reverseStepperDeg(float deltaDeg, uint32_t stepDelayUs);
     void performVibrationJitter(uint8_t jitterCount);
     void setServoAngle(uint8_t angleDeg);
     void updateBuzzerPattern(BuzzerPattern_t pattern);

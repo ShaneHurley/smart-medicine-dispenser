@@ -87,11 +87,22 @@ void WebServerManager::setupRestApi() {
             JsonDocument res;
             res["success"] = queued;
             res["chamberId"] = chamberId;
-            res["message"] = queued ? "Singulation command queued" : "Hardware engine busy";
+            res["message"] = queued ? "Singulation command queued" : "Hardware engine busy or tray occupied";
 
             String out;
             serializeJson(res, out);
             request->send(queued ? 200 : 429, "application/json", out);
+        }
+    );
+
+    // POST /api/motor/reverse - Command Reverse Step (Jam Backoff)
+    _server.on("/api/motor/reverse", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            JsonDocument doc;
+            deserializeJson(doc, data, len);
+            float degrees = doc["degrees"] | 15.0f;
+            DispenserEngine::getInstance().commandMotorReverse(degrees);
+            request->send(200, "application/json", "{\"success\":true,\"message\":\"Motor reversed\"}");
         }
     );
 

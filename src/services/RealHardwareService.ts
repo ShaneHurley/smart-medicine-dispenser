@@ -118,6 +118,14 @@ export class RealHardwareService implements IHardwareService {
     });
   }
 
+  public async reverseStepper(chamberId: number, degrees: number, speed: number = 2000): Promise<void> {
+    await fetch(`${this.baseUrl}/api/motor/reverse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chamberId, degrees, speed }),
+    });
+  }
+
   public async acknowledgePickup(): Promise<void> {
     await fetch(`${this.baseUrl}/api/pickup`, {
       method: 'POST',

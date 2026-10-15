@@ -79,7 +79,8 @@ void DispenserEngine::handleBeamBreakISR() {
 }
 
 bool DispenserEngine::queueDispense(uint8_t chamberId, const DispenseProfile_t& profile) {
-    if (_telemetry.state != STATE_IDLE && _telemetry.state != STATE_WAITING_PICKUP) {
+    // Safety check: Cannot dispense another pill if tray is occupied or motor is busy
+    if (_telemetry.state != STATE_IDLE || _telemetry.trayOccupied) {
         return false;
     }
     DispenseCommand_t cmd;
@@ -141,6 +142,26 @@ void DispenserEngine::rotateStepperDeg(float targetDeg, uint32_t stepDelayUs) {
     _telemetry.stepperRunning = false;
 }
 
+void DispenserEngine::reverseStepperDeg(float deltaDeg, uint32_t stepDelayUs) {
+    _telemetry.stepperRunning = true;
+    // 200 full steps/rev * 16 microsteps = 3200 steps/rev (8.88 steps per degree)
+    uint32_t steps = (uint32_t)(deltaDeg * (3200.0f / 360.0f));
+
+    digitalWrite(PIN_TMC_DIR, LOW); // Reverse indexing (counter-clockwise backoff)
+    for (uint32_t i = 0; i < steps; i++) {
+        digitalWrite(PIN_TMC_STEP, HIGH);
+        delayMicroseconds(stepDelayUs / 2);
+        digitalWrite(PIN_TMC_STEP, LOW);
+        delayMicroseconds(stepDelayUs / 2);
+    }
+
+    float next = _telemetry.stepperAngleDeg - deltaDeg;
+    while (next < 0) next += 360.0f;
+    while (next >= 360.0f) next -= 360.0f;
+    _telemetry.stepperAngleDeg = next;
+    _telemetry.stepperRunning = false;
+}
+
 void DispenserEngine::performVibrationJitter(uint8_t jitterCount) {
     _telemetry.state = STATE_VIBRATING;
     for (uint8_t j = 0; j < jitterCount; j++) {
@@ -180,8 +201,8 @@ void DispenserEngine::hardwareTaskLoop() {
 
         if (_telemetry.state == STATE_JAMMED) {
             commandBuzzer(BUZZER_JAM_ERROR);
-            // Reverse 15 deg auto-recovery
-            rotateStepperDeg((_telemetry.stepperAngleDeg - 15.0f), 2000);
+            // Reverse 15 deg counter-clockwise auto-recovery
+            reverseStepperDeg(15.0f, 2000);
             return;
         }
 
@@ -277,6 +298,10 @@ void DispenserEngine::commandMotorStep(int16_t deltaDeg) {
     while (next < 0) next += 360.0f;
     while (next >= 360.0f) next -= 360.0f;
     rotateStepperDeg(next, 1200);
+}
+
+void DispenserEngine::commandMotorReverse(float deltaDeg) {
+    reverseStepperDeg(deltaDeg, 1200);
 }
 
 void DispenserEngine::simulateJamFault(bool enable) {

@@ -62,6 +62,9 @@ export interface IHardwareService {
   /** Directly command stepper rotation */
   rotateStepper(chamberId: number, steps: number, speed: number): Promise<void>;
 
+  /** Command stepper reverse backoff rotation (e.g. jam clearing) */
+  reverseStepper(chamberId: number, degrees: number, speed?: number): Promise<void>;
+
   /** User confirms pill taken or tray microswitch sensor detects pickup */
   acknowledgePickup(): Promise<void>;
 
