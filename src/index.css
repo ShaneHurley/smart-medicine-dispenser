@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-mint: #7dcbbe;
+  --color-peach: #f0b7a0;
+  --color-sky: #8ec5e8;
+  --color-butter: #f6e7a9;
+  --color-ink: #2f383b;
+  --color-muted: #5f6d72;
+  --color-clay: #fffdf8;
+  --radius-clay: 1.75rem;
+}
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --color-clay-glint: rgba(255, 255, 255, 0.65);
+  --shadow-clay-rest: inset 0 2px 0 var(--color-clay-glint), inset 0 -2px 0 rgba(0, 0, 0, 0.05),
+    0 4px 12px rgba(47, 56, 59, 0.08);
+  --shadow-clay-pressed: inset 0 2px 5px rgba(31, 42, 46, 0.18),
+    inset 0 1px 2px rgba(31, 42, 46, 0.1), 0 1px 2px rgba(31, 42, 46, 0.06);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: #fcf9f2;
+  color: #2f383b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Claymorphic Utility Classes */
+.surface-clay {
+  background-color: #fffdf8;
+  border: 1px solid rgba(235, 220, 203, 0.8);
+  box-shadow: var(--shadow-clay-rest);
+}
+
+.surface-clay-pressed {
+  box-shadow: var(--shadow-clay-pressed);
+  transform: translateY(2px);
+}
+
+.rounded-clay {
+  border-radius: var(--radius-clay);
+}
+
+/* Touch Target Accessibility Standard (>=48px) */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
